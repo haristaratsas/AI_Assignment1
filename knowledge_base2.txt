@@ -1,0 +1,6 @@
+A,B
+B,L->M
+L,M->P
+P->Q
+A,B->L
+A,P->L
