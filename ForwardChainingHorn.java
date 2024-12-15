@@ -105,8 +105,8 @@ public class ForwardChainingHorn {
         do {
             addedNewFact = false;
             for (Rule rule : rules) {
-                Map<String, String> theta = new HashMap<>();
-                if (matchConditions(rule.conditions, inferred, theta)) {
+                List<Map<String, String>> substitutions = findAllSubstitutions(rule.conditions, inferred);
+                for (Map<String, String> theta : substitutions) {
                     Predicate conclusion = substitute(rule.conclusion, theta);
                     if (!inferred.contains(conclusion)) {
                         inferred.add(conclusion);
@@ -122,20 +122,25 @@ public class ForwardChainingHorn {
         return inferred.contains(query);
     }
 
-    private boolean matchConditions(List<Predicate> conditions, Set<Predicate> inferred, Map<String, String> theta) {
-        if (conditions.isEmpty()) return true;
+    private List<Map<String, String>> findAllSubstitutions(List<Predicate> conditions, Set<Predicate> inferred) {
+        List<Map<String, String>> results = new ArrayList<>();
+        findAllSubstitutionsRecursive(conditions, inferred, new HashMap<>(), results);
+        return results;
+    }
+
+    private void findAllSubstitutionsRecursive(List<Predicate> conditions, Set<Predicate> inferred, Map<String, String> currentTheta, List<Map<String, String>> results) {
+        if (conditions.isEmpty()) {
+            results.add(new HashMap<>(currentTheta));
+            return;
+        }
         Predicate first = conditions.get(0);
         List<Predicate> rest = conditions.subList(1, conditions.size());
         for (Predicate fact : inferred) {
-            Map<String, String> thetaCopy = new HashMap<>(theta);
+            Map<String, String> thetaCopy = new HashMap<>(currentTheta);
             if (unify(first, fact, thetaCopy)) {
-                if (matchConditions(rest, inferred, thetaCopy)) {
-                    theta.putAll(thetaCopy);
-                    return true;
-                }
+                findAllSubstitutionsRecursive(rest, inferred, thetaCopy, results);
             }
         }
-        return false;
     }
 
     private boolean unify(Predicate p1, Predicate p2, Map<String, String> theta) {
